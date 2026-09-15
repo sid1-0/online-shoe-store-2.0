@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Background Gallery</title>
+    <!-- Add reCAPTCHA script -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #background-element {
+            width: 100%;
+            height: 100vh;
+            background-image: url('images/img1.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        #background-element::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1));
+            z-index: 1;
+        }
+
+        .overlay-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 3;
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .overlay-content h1 {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .overlay-content p {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        #controls {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 4;
+        }
+
+        .control-btn {
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: 2px solid white;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .control-btn:hover {
+            background: white;
+            color: #333;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.3);
+        }
+
+        .control-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .image-indicator {
+            position: fixed;
+            top: 40px;
+            right: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 15px 25px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 4;
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+            transition: width 0.3s ease;
+            z-index: 4;
+        }
+
+        .image-dots {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 4;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: white;
+            transform: scale(1.3);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        .floating-elements {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .floating-shape {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        .floating-shape:nth-child(1) {
+            width: 100px;
+            height: 100px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-shape:nth-child(2) {
+            width: 150px;
+            height: 150px;
+            top: 60%;
+            right: 15%;
+            animation-delay: 3s;
+        }
+
+        .floating-shape:nth-child(3) {
+            width: 80px;
+            height: 80px;
+            bottom: 30%;
+            left: 20%;
+            animation-delay: 6s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            33% {
+                transform: translateY(-30px) rotate(120deg);
+            }
+            66% {
+                transform: translateY(30px) rotate(240deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .overlay-content {
+                padding: 30px 20px;
+                margin: 0 20px;
+            }
+
+            .overlay-content h1 {
+                font-size: 2.5rem;
+            }
+
+            .overlay-content p {
+                font-size: 1.1rem;
+            }
+
+            #controls {
+                bottom: 30px;
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .control-btn {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+
+            .image-indicator {
+                top: 20px;
+                right: 20px;
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .overlay-content h1 {
+                font-size: 2rem;
+            }
+
+            .overlay-content p {
+                font-size: 1rem;
+            }
+
+            .cta-button {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Add styles for the form and reCAPTCHA container */
+        .form-container {
+            margin: 20px 0;
+        }
+        
+        .g-recaptcha {
+            display: inline-block;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="background-element">
+        <div class="floating-elements">
+            <div class="floating-shape"></div>
+            <div class="floating-shape"></div>
+            <div class="floating-shape"></div>
+        </div>
+
+        <div class="overlay-content">
+            <h1>Shoe Gallery</h1>
+            <p>Explore our stunning collection through this dynamic background showcase. Each image tells a story of style, comfort, and innovation.</p>
+            <div class="form-container">
+                <!-- Add reCAPTCHA widget -->
+                <div class="g-recaptcha" data-sitekey="6Lc8G1UrAAAAAHnQkbFIfN-YPyMNcAaTuAbr4_XU"></div>
+            </div>
+            <a href="#" class="cta-button" onclick="validateCaptcha(event)">Explore Collection</a>
+        </div>
+    </div>
+
+    <div class="image-indicator">
+        <span id="current-image">1</span> / <span id="total-images">3</span>
+    </div>
+
+    <div class="progress-bar" id="progress-bar"></div>
+
+    <div class="image-dots" id="image-dots"></div>
+
+    <div id="controls">
+        <button class="control-btn" id="previous-image-button">← Previous</button>
+        <button class="control-btn" id="next-image-button">Next →</button>
+    </div>
+
+    <script>
+        var images = [
+            'images/img1.jpg',
+            'images/img2.jpg',
+            'images/img3.jpg'
+        ];
+        var currentIndex = 0;
+        var autoSlideInterval;
+
+        // Initialize
+        document.getElementById('total-images').textContent = images.length;
+        createDots();
+        updateDisplay();
+        startAutoSlide();
+
+        // Event listeners
+        document.getElementById('previous-image-button').addEventListener('click', function() {
+            currentIndex = (currentIndex === 0) ? images.length - 1 : currentIndex - 1;
+            updateDisplay();
+            resetAutoSlide();
+        });
+
+        document.getElementById('next-image-button').addEventListener('click', function() {
+            currentIndex = (currentIndex === images.length - 1) ? 0 : currentIndex + 1;
+            updateDisplay();
+            resetAutoSlide();
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                document.getElementById('previous-image-button').click();
+            } else if (e.key === 'ArrowRight') {
+                document.getElementById('next-image-button').click();
+            }
+        });
+
+        function updateDisplay() {
+            var element = document.getElementById('background-element');
+            element.style.backgroundImage = "url('" + images[currentIndex] + "')";
+            
+            document.getElementById('current-image').textContent = currentIndex + 1;
+            
+            // Update progress bar
+            var progressBar = document.getElementById('progress-bar');
+            var progressWidth = ((currentIndex + 1) / images.length) * 100;
+            progressBar.style.width = progressWidth + '%';
+            
+            // Update dots
+            updateDots();
+        }
+
+        function createDots() {
+            var dotsContainer = document.getElementById('image-dots');
+            for (var i = 0; i < images.length; i++) {
+                var dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.addEventListener('click', (function(index) {
+                    return function() {
+                        currentIndex = index;
+                        updateDisplay();
+                        resetAutoSlide();
+                    };
+                })(i));
+                dotsContainer.appendChild(dot);
+            }
+        }
+
+        function updateDots() {
+            var dots = document.querySelectorAll('.dot');
+            dots.forEach(function(dot, index) {
+                dot.classList.toggle('active', index === currentIndex);
+            });
+        }
+
+        function startAutoSlide() {
+            autoSlideInterval = setInterval(function() {
+                currentIndex = (currentIndex === images.length - 1) ? 0 : currentIndex + 1;
+                updateDisplay();
+            }, 5000);
+        }
+
+        function resetAutoSlide() {
+            clearInterval(autoSlideInterval);
+            startAutoSlide();
+        }
+
+        // Pause auto-slide on hover
+        document.getElementById('background-element').addEventListener('mouseenter', function() {
+            clearInterval(autoSlideInterval);
+        });
+
+        document.getElementById('background-element').addEventListener('mouseleave', function() {
+            startAutoSlide();
+        });
+    </script>
+</body>
+</html>
